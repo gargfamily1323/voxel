@@ -1,35 +1,100 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 export type RecorderState = "idle" | "recording" | "processing";
 
+// Minimal types for the Web Speech API (not in lib.dom by default in TS)
+type SpeechRecognitionResult = {
+  isFinal: boolean;
+  0: { transcript: string };
+};
+type SpeechRecognitionEvent = {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResult>;
+};
+type SpeechRecognitionErrorEvent = { error: string };
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((e: SpeechRecognitionEvent) => void) | null;
+  onerror: ((e: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+};
+
+function getRecognitionCtor(): (new () => SpeechRecognitionInstance) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as {
+    SpeechRecognition?: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
 export function useRecorder() {
   const [state, setState] = useState<RecorderState>("idle");
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-  const resolveRef = useRef<((b64: string | null) => void) | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const finalTranscriptRef = useRef<string>("");
+  const resolveRef = useRef<((text: string | null) => void) | null>(null);
+  const errorRef = useRef<string | null>(null);
 
-  const start = useCallback(async () => {
+  const isSupported = !!getRecognitionCtor();
+
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.abort();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
+  const start = useCallback(async (): Promise<boolean> => {
+    const Ctor = getRecognitionCtor();
+    if (!Ctor) {
+      errorRef.current = "unsupported";
+      return false;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      mr.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-        if (blob.size === 0) { resolveRef.current?.(null); return; }
-        const b64 = await blobToBase64(blob);
-        resolveRef.current?.(b64);
+      const recognition = new Ctor();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || "en-US";
+
+      finalTranscriptRef.current = "";
+      errorRef.current = null;
+
+      recognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalTranscriptRef.current += result[0].transcript + " ";
+          }
+        }
       };
-      mediaRecorderRef.current = mr;
-      mr.start();
+
+      recognition.onerror = (e) => {
+        errorRef.current = e.error;
+      };
+
+      recognition.onend = () => {
+        const text = finalTranscriptRef.current.trim();
+        const resolver = resolveRef.current;
+        resolveRef.current = null;
+        recognitionRef.current = null;
+        if (resolver) resolver(text.length > 0 ? text : null);
+        setState("idle");
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
       setState("recording");
       return true;
     } catch (e) {
-      console.error("mic error", e);
+      console.error("speech recognition start error", e);
       setState("idle");
       return false;
     }
@@ -37,27 +102,25 @@ export function useRecorder() {
 
   const stop = useCallback((): Promise<string | null> => {
     return new Promise((resolve) => {
-      const mr = mediaRecorderRef.current;
-      if (!mr || mr.state === "inactive") { resolve(null); return; }
+      const recognition = recognitionRef.current;
+      if (!recognition) {
+        resolve(null);
+        return;
+      }
       resolveRef.current = resolve;
       setState("processing");
-      mr.stop();
+      try {
+        recognition.stop();
+      } catch {
+        resolveRef.current = null;
+        recognitionRef.current = null;
+        setState("idle");
+        resolve(null);
+      }
     });
   }, []);
 
   const reset = useCallback(() => setState("idle"), []);
 
-  return { state, start, stop, reset };
-}
-
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+  return { state, start, stop, reset, isSupported, lastError: errorRef };
 }
