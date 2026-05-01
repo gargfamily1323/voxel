@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { useRecorder } from "@/hooks/useRecorder";
 import { toast } from "sonner";
 import { Waves } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 type Category = "TECH" | "SCHOOL" | "PERSONAL";
@@ -18,6 +19,28 @@ const CATEGORY_DOT: Record<Category, string> = {
   SCHOOL: "bg-school shadow-[0_0_12px_hsl(var(--school))]",
   PERSONAL: "bg-personal shadow-[0_0_12px_hsl(var(--personal))]",
 };
+
+function dayLabel(dateStr: string | null): string {
+  if (!dateStr) return "No due date";
+  const d = new Date(dateStr + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  if (d.getTime() === today.getTime()) return "Today";
+  if (d.getTime() === tomorrow.getTime()) return "Tomorrow";
+  if (d.getTime() === yesterday.getTime()) return "Yesterday";
+  if (d < today) return "Overdue";
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+}
+
+function dayOrder(dateStr: string | null): number {
+  if (!dateStr) return Number.MAX_SAFE_INTEGER;
+  const d = new Date(dateStr + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  if (d < today) return -1; // Overdue first
+  return d.getTime();
+}
+
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -47,6 +70,17 @@ const Index = () => {
     const m: Record<Category, Task[]> = { TECH: [], SCHOOL: [], PERSONAL: [] };
     tasks.forEach((t) => m[t.category as Category]?.push(t));
     return m;
+  }, [tasks]);
+
+  const groupedByDay = useMemo(() => {
+    const m = new Map<string, { label: string; order: number; tasks: Task[] }>();
+    tasks.forEach((t) => {
+      const key = t.due_date ?? "none";
+      const existing = m.get(key);
+      if (existing) existing.tasks.push(t);
+      else m.set(key, { label: dayLabel(t.due_date), order: dayOrder(t.due_date), tasks: [t] });
+    });
+    return Array.from(m.values()).sort((a, b) => a.order - b.order);
   }, [tasks]);
 
   const handlePress = async () => {
@@ -116,28 +150,58 @@ const Index = () => {
         {isEmpty ? (
           <EmptyState />
         ) : (
-          <div className="space-y-8 mt-2">
-            {CATEGORIES.map((cat) => {
-              const items = grouped[cat];
-              if (items.length === 0) return null;
-              return (
-                <section key={cat}>
-                  <div className="flex items-center gap-2 mb-3 px-1">
-                    <span className={`h-2 w-2 rounded-full ${CATEGORY_DOT[cat]}`} />
-                    <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                      {CATEGORY_LABEL[cat]}
-                    </h2>
-                    <span className="text-xs text-muted-foreground/60">{items.length}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {items.map((t) => (
-                      <TaskCard key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
+          <Tabs defaultValue="day" className="mt-2">
+            <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur border border-border/60">
+              <TabsTrigger value="day">By Day</TabsTrigger>
+              <TabsTrigger value="category">By Category</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="day" className="mt-6">
+              <div className="space-y-8">
+                {groupedByDay.map((group) => (
+                  <section key={group.label}>
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary))]" />
+                      <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        {group.label}
+                      </h2>
+                      <span className="text-xs text-muted-foreground/60">{group.tasks.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {group.tasks.map((t) => (
+                        <TaskCard key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="category" className="mt-6">
+              <div className="space-y-8">
+                {CATEGORIES.map((cat) => {
+                  const items = grouped[cat];
+                  if (items.length === 0) return null;
+                  return (
+                    <section key={cat}>
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <span className={`h-2 w-2 rounded-full ${CATEGORY_DOT[cat]}`} />
+                        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                          {CATEGORY_LABEL[cat]}
+                        </h2>
+                        <span className="text-xs text-muted-foreground/60">{items.length}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {items.map((t) => (
+                          <TaskCard key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
       </main>
 
