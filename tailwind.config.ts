@@ -57,6 +57,19 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        tech: "hsl(var(--tech))",
+        school: "hsl(var(--school))",
+        personal: "hsl(var(--personal))",
+        "priority-high": "hsl(var(--priority-high))",
+        "priority-med": "hsl(var(--priority-med))",
+        "priority-low": "hsl(var(--priority-low))",
+      },
+      fontFamily: {
+        display: ['"Space Grotesk"', 'Inter', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      backgroundImage: {
+        'gradient-primary': 'var(--gradient-primary)',
       },
       borderRadius: {
         lg: "var(--radius)",
