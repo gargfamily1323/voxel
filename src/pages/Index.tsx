@@ -72,6 +72,17 @@ const Index = () => {
     return m;
   }, [tasks]);
 
+  const groupedByDay = useMemo(() => {
+    const m = new Map<string, { label: string; order: number; tasks: Task[] }>();
+    tasks.forEach((t) => {
+      const key = t.due_date ?? "none";
+      const existing = m.get(key);
+      if (existing) existing.tasks.push(t);
+      else m.set(key, { label: dayLabel(t.due_date), order: dayOrder(t.due_date), tasks: [t] });
+    });
+    return Array.from(m.values()).sort((a, b) => a.order - b.order);
+  }, [tasks]);
+
   const handlePress = async () => {
     if (recorder.state !== "idle") return;
     if (!recorder.isSupported) {
