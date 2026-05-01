@@ -11,7 +11,7 @@ export const EmptyState = () => (
       </div>
     </div>
     <h2 className="text-2xl font-display font-semibold text-gradient mb-2">
-      Ready for your next brain dump?
+      Speak. We'll handle the rest.
     </h2>
     <p className="text-sm text-muted-foreground max-w-xs">
       Hold the record button below and just talk — Voxel will turn your thoughts into organized tasks.
