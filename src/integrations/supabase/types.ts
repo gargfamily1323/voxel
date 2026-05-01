@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      tasks: {
+        Row: {
+          category: Database["public"]["Enums"]["task_category"]
+          completed: boolean
+          created_at: string
+          due_date: string | null
+          id: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          title: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["task_category"]
+          completed?: boolean
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          title: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["task_category"]
+          completed?: boolean
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +52,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_category: "TECH" | "SCHOOL" | "PERSONAL"
+      task_priority: "high" | "med" | "low"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +180,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      task_category: ["TECH", "SCHOOL", "PERSONAL"],
+      task_priority: ["high", "med", "low"],
+    },
   },
 } as const
