@@ -51,20 +51,19 @@ const Index = () => {
 
   const handlePress = async () => {
     if (recorder.state !== "idle") return;
+    if (!recorder.isSupported) {
+      toast.error("Voice input isn't supported in this browser. Try Chrome or Safari.");
+      return;
+    }
     const ok = await recorder.start();
-    if (!ok) toast.error("Microphone access denied");
+    if (!ok) toast.error("Couldn't start the microphone. Check permissions.");
   };
 
   const handleRelease = async () => {
     if (recorder.state !== "recording") return;
-    const audio = await recorder.stop();
-    if (!audio) { recorder.reset(); return; }
+    const text = await recorder.stop();
+    if (!text) { toast("Didn't catch that — try again."); recorder.reset(); return; }
     try {
-      toast.loading("Transcribing…", { id: "process" });
-      const { data: tx, error: txErr } = await supabase.functions.invoke("transcribe", { body: { audio } });
-      if (txErr || tx?.error) throw new Error(tx?.error || txErr?.message);
-      const text = (tx?.text ?? "").trim();
-      if (!text) { toast.dismiss("process"); toast("Didn't catch that — try again."); recorder.reset(); return; }
       setTranscript(text);
       toast.loading("Extracting tasks…", { id: "process" });
       const { data: ex, error: exErr } = await supabase.functions.invoke("extract-tasks", { body: { transcript: text } });
