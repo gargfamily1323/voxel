@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { useRecorder } from "@/hooks/useRecorder";
 import { toast } from "sonner";
 import { Waves } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 type Category = "TECH" | "SCHOOL" | "PERSONAL";
@@ -18,6 +19,28 @@ const CATEGORY_DOT: Record<Category, string> = {
   SCHOOL: "bg-school shadow-[0_0_12px_hsl(var(--school))]",
   PERSONAL: "bg-personal shadow-[0_0_12px_hsl(var(--personal))]",
 };
+
+function dayLabel(dateStr: string | null): string {
+  if (!dateStr) return "No due date";
+  const d = new Date(dateStr + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  if (d.getTime() === today.getTime()) return "Today";
+  if (d.getTime() === tomorrow.getTime()) return "Tomorrow";
+  if (d.getTime() === yesterday.getTime()) return "Yesterday";
+  if (d < today) return "Overdue";
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+}
+
+function dayOrder(dateStr: string | null): number {
+  if (!dateStr) return Number.MAX_SAFE_INTEGER;
+  const d = new Date(dateStr + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  if (d < today) return -1; // Overdue first
+  return d.getTime();
+}
+
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
