@@ -150,28 +150,58 @@ const Index = () => {
         {isEmpty ? (
           <EmptyState />
         ) : (
-          <div className="space-y-8 mt-2">
-            {CATEGORIES.map((cat) => {
-              const items = grouped[cat];
-              if (items.length === 0) return null;
-              return (
-                <section key={cat}>
-                  <div className="flex items-center gap-2 mb-3 px-1">
-                    <span className={`h-2 w-2 rounded-full ${CATEGORY_DOT[cat]}`} />
-                    <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                      {CATEGORY_LABEL[cat]}
-                    </h2>
-                    <span className="text-xs text-muted-foreground/60">{items.length}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {items.map((t) => (
-                      <TaskCard key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
+          <Tabs defaultValue="day" className="mt-2">
+            <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur border border-border/60">
+              <TabsTrigger value="day">By Day</TabsTrigger>
+              <TabsTrigger value="category">By Category</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="day" className="mt-6">
+              <div className="space-y-8">
+                {groupedByDay.map((group) => (
+                  <section key={group.label}>
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary))]" />
+                      <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        {group.label}
+                      </h2>
+                      <span className="text-xs text-muted-foreground/60">{group.tasks.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {group.tasks.map((t) => (
+                        <TaskCard key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="category" className="mt-6">
+              <div className="space-y-8">
+                {CATEGORIES.map((cat) => {
+                  const items = grouped[cat];
+                  if (items.length === 0) return null;
+                  return (
+                    <section key={cat}>
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <span className={`h-2 w-2 rounded-full ${CATEGORY_DOT[cat]}`} />
+                        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                          {CATEGORY_LABEL[cat]}
+                        </h2>
+                        <span className="text-xs text-muted-foreground/60">{items.length}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {items.map((t) => (
+                          <TaskCard key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
       </main>
 
