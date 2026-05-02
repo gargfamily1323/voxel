@@ -18,6 +18,7 @@ const categoryStyles: Record<string, string> = {
   SCHOOL: "bg-school/10 text-school border-school/40",
   PERSONAL: "bg-personal/10 text-personal border-personal/40",
 };
+const defaultCategoryStyle = "bg-secondary/10 text-secondary border-secondary/40";
 
 interface Props {
   task: Task;
