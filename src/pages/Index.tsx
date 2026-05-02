@@ -85,6 +85,10 @@ const Index = () => {
     });
   }, [tasks, search, catFilter, prioFilter, statusFilter, dueFilter]);
 
+  const categoriesPresent = useMemo(() => {
+    return Array.from(new Set(tasks.map((t) => t.category))).sort();
+  }, [tasks]);
+
   const handlePress = async () => {
     if (recorder.state !== "idle") return;
     if (!recorder.isSupported) { toast.error("Voice input isn't supported in this browser."); return; }
@@ -207,9 +211,9 @@ const Index = () => {
                 <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Category" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All categories</SelectItem>
-                  <SelectItem value="TECH">Tech</SelectItem>
-                  <SelectItem value="SCHOOL">School</SelectItem>
-                  <SelectItem value="PERSONAL">Personal</SelectItem>
+                  {categoriesPresent.map((c) => (
+                    <SelectItem key={c} value={c}>{c.charAt(0) + c.slice(1).toLowerCase()}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={prioFilter} onValueChange={(v) => setPrioFilter(v as any)}>
@@ -273,7 +277,7 @@ const Index = () => {
         )}
       </main>
 
-      <EditTaskDialog task={editingTask} open={editOpen} onOpenChange={setEditOpen} onSave={saveEdit} />
+      <EditTaskDialog task={editingTask} open={editOpen} onOpenChange={setEditOpen} onSave={saveEdit} knownCategories={categoriesPresent} />
 
       {/* Floating record dock */}
       <div className="fixed bottom-16 inset-x-0 z-30 pointer-events-none">
