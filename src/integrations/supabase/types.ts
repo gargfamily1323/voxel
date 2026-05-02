@@ -16,7 +16,7 @@ export type Database = {
     Tables: {
       tasks: {
         Row: {
-          category: Database["public"]["Enums"]["task_category"]
+          category: string
           completed: boolean
           created_at: string
           due_date: string | null
@@ -26,7 +26,7 @@ export type Database = {
           title: string
         }
         Insert: {
-          category?: Database["public"]["Enums"]["task_category"]
+          category?: string
           completed?: boolean
           created_at?: string
           due_date?: string | null
@@ -36,7 +36,7 @@ export type Database = {
           title: string
         }
         Update: {
-          category?: Database["public"]["Enums"]["task_category"]
+          category?: string
           completed?: boolean
           created_at?: string
           due_date?: string | null
@@ -55,7 +55,6 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      task_category: "TECH" | "SCHOOL" | "PERSONAL"
       task_priority: "high" | "med" | "low"
     }
     CompositeTypes: {
@@ -184,7 +183,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      task_category: ["TECH", "SCHOOL", "PERSONAL"],
       task_priority: ["high", "med", "low"],
     },
   },

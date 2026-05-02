@@ -18,6 +18,7 @@ const categoryStyles: Record<string, string> = {
   SCHOOL: "bg-school/10 text-school border-school/40",
   PERSONAL: "bg-personal/10 text-personal border-personal/40",
 };
+const defaultCategoryStyle = "bg-secondary/10 text-secondary border-secondary/40";
 
 interface Props {
   task: Task;
@@ -73,7 +74,7 @@ export const TaskCard = ({ task, onToggle, onDelete, onEdit, draggable = false }
             {task.title}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border", categoryStyles[task.category])}>
+            <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border", categoryStyles[task.category] ?? defaultCategoryStyle)}>
               {task.category}
             </span>
             <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border", priorityStyles[task.priority])}>
