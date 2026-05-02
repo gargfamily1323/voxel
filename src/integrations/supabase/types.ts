@@ -22,6 +22,7 @@ export type Database = {
           due_date: string | null
           id: string
           priority: Database["public"]["Enums"]["task_priority"]
+          sort_order: number
           title: string
         }
         Insert: {
@@ -31,6 +32,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
+          sort_order?: number
           title: string
         }
         Update: {
@@ -40,6 +42,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
+          sort_order?: number
           title?: string
         }
         Relationships: []

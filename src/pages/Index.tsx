@@ -4,55 +4,53 @@ import { Database } from "@/integrations/supabase/types";
 import { RecordButton } from "@/components/RecordButton";
 import { TaskCard } from "@/components/TaskCard";
 import { EmptyState } from "@/components/EmptyState";
+import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { useRecorder } from "@/hooks/useRecorder";
 import { toast } from "sonner";
-import { Waves } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Waves, Home, ListChecks, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 type Category = "TECH" | "SCHOOL" | "PERSONAL";
-
-const CATEGORIES: Category[] = ["TECH", "SCHOOL", "PERSONAL"];
-const CATEGORY_LABEL: Record<Category, string> = { TECH: "Tech", SCHOOL: "School", PERSONAL: "Personal" };
-const CATEGORY_DOT: Record<Category, string> = {
-  TECH: "bg-tech shadow-[0_0_12px_hsl(var(--tech))]",
-  SCHOOL: "bg-school shadow-[0_0_12px_hsl(var(--school))]",
-  PERSONAL: "bg-personal shadow-[0_0_12px_hsl(var(--personal))]",
-};
-
-function dayLabel(dateStr: string | null): string {
-  if (!dateStr) return "No due date";
-  const d = new Date(dateStr + "T00:00:00");
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-  if (d.getTime() === today.getTime()) return "Today";
-  if (d.getTime() === tomorrow.getTime()) return "Tomorrow";
-  if (d.getTime() === yesterday.getTime()) return "Yesterday";
-  if (d < today) return "Overdue";
-  return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-}
-
-function dayOrder(dateStr: string | null): number {
-  if (!dateStr) return Number.MAX_SAFE_INTEGER;
-  const d = new Date(dateStr + "T00:00:00");
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  if (d < today) return -1; // Overdue first
-  return d.getTime();
-}
-
+type Priority = "high" | "med" | "low";
+type StatusFilter = "all" | "active" | "completed";
+type DueFilter = "all" | "today" | "week" | "overdue";
+type Tab = "home" | "tasks";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [tab, setTab] = useState<Tab>("home");
   const [transcript, setTranscript] = useState<string | null>(null);
   const recorder = useRecorder();
+
+  // filters
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState<Category | "all">("all");
+  const [prioFilter, setPrioFilter] = useState<Priority | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [dueFilter, setDueFilter] = useState<DueFilter>("all");
+
+  // edit
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+  );
 
   const fetchTasks = async () => {
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
-      .order("completed", { ascending: true })
-      .order("created_at", { ascending: false });
+      .order("sort_order", { ascending: true });
     if (error) { toast.error(error.message); return; }
     setTasks(data ?? []);
   };
@@ -66,29 +64,30 @@ const Index = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  const grouped = useMemo(() => {
-    const m: Record<Category, Task[]> = { TECH: [], SCHOOL: [], PERSONAL: [] };
-    tasks.forEach((t) => m[t.category as Category]?.push(t));
-    return m;
-  }, [tasks]);
-
-  const groupedByDay = useMemo(() => {
-    const m = new Map<string, { label: string; order: number; tasks: Task[] }>();
-    tasks.forEach((t) => {
-      const key = t.due_date ?? "none";
-      const existing = m.get(key);
-      if (existing) existing.tasks.push(t);
-      else m.set(key, { label: dayLabel(t.due_date), order: dayOrder(t.due_date), tasks: [t] });
+  const filtered = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
+    const q = search.trim().toLowerCase();
+    return tasks.filter((t) => {
+      if (q && !t.title.toLowerCase().includes(q)) return false;
+      if (catFilter !== "all" && t.category !== catFilter) return false;
+      if (prioFilter !== "all" && t.priority !== prioFilter) return false;
+      if (statusFilter === "active" && t.completed) return false;
+      if (statusFilter === "completed" && !t.completed) return false;
+      if (dueFilter !== "all") {
+        if (!t.due_date) return false;
+        const d = new Date(t.due_date + "T00:00:00");
+        if (dueFilter === "today" && d.getTime() !== today.getTime()) return false;
+        if (dueFilter === "week" && (d < today || d > weekEnd)) return false;
+        if (dueFilter === "overdue" && (d >= today || t.completed)) return false;
+      }
+      return true;
     });
-    return Array.from(m.values()).sort((a, b) => a.order - b.order);
-  }, [tasks]);
+  }, [tasks, search, catFilter, prioFilter, statusFilter, dueFilter]);
 
   const handlePress = async () => {
     if (recorder.state !== "idle") return;
-    if (!recorder.isSupported) {
-      toast.error("Voice input isn't supported in this browser. Try Chrome or Safari.");
-      return;
-    }
+    if (!recorder.isSupported) { toast.error("Voice input isn't supported in this browser."); return; }
     const ok = await recorder.start();
     if (!ok) toast.error("Couldn't start the microphone. Check permissions.");
   };
@@ -102,9 +101,11 @@ const Index = () => {
       toast.loading("Extracting tasks…", { id: "process" });
       const { data: ex, error: exErr } = await supabase.functions.invoke("extract-tasks", { body: { transcript: text } });
       if (exErr || ex?.error) throw new Error(ex?.error || exErr?.message);
-      const newTasks = (ex?.tasks ?? []) as Array<{ title: string; category: Category; priority: "high"|"med"|"low"; due_date: string | null }>;
+      const newTasks = (ex?.tasks ?? []) as Array<{ title: string; category: Category; priority: Priority; due_date: string | null }>;
       if (newTasks.length === 0) { toast.dismiss("process"); toast("No tasks detected."); recorder.reset(); return; }
-      const { error: insErr } = await supabase.from("tasks").insert(newTasks);
+      const baseOrder = Date.now();
+      const withOrder = newTasks.map((t, i) => ({ ...t, sort_order: baseOrder + i }));
+      const { error: insErr } = await supabase.from("tasks").insert(withOrder);
       if (insErr) throw insErr;
       toast.success(`Added ${newTasks.length} task${newTasks.length > 1 ? "s" : ""}`, { id: "process" });
     } catch (e: any) {
@@ -126,7 +127,36 @@ const Index = () => {
     await supabase.from("tasks").delete().eq("id", id);
   };
 
-  const isEmpty = tasks.length === 0;
+  const openEdit = (t: Task) => { setEditingTask(t); setEditOpen(true); };
+
+  const saveEdit = async (id: string, updates: Partial<Task>) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } as Task : t)));
+    const { error } = await supabase.from("tasks").update(updates).eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("Task updated");
+  };
+
+  const handleDragEnd = async (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = tasks.findIndex((t) => t.id === active.id);
+    const newIndex = tasks.findIndex((t) => t.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const reordered = arrayMove(tasks, oldIndex, newIndex);
+    // recompute sort_order spaced by 1000
+    const updated = reordered.map((t, i) => ({ ...t, sort_order: (i + 1) * 1000 }));
+    setTasks(updated);
+    // persist all
+    await Promise.all(
+      updated.map((t) => supabase.from("tasks").update({ sort_order: t.sort_order }).eq("id", t.id))
+    );
+  };
+
+  const clearFilters = () => {
+    setSearch(""); setCatFilter("all"); setPrioFilter("all"); setStatusFilter("all"); setDueFilter("all");
+  };
+
+  const hasActiveFilters = search || catFilter !== "all" || prioFilter !== "all" || statusFilter !== "all" || dueFilter !== "all";
 
   return (
     <div className="min-h-screen relative overflow-x-hidden">
@@ -146,81 +176,148 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="relative px-5 pb-48 max-w-2xl mx-auto">
-        {isEmpty ? (
-          <EmptyState />
+      <main className="relative px-5 pb-44 max-w-2xl mx-auto">
+        {tab === "home" ? (
+          <div className="pt-8">
+            <EmptyState />
+            {tasks.length > 0 && (
+              <div className="mt-6 text-center">
+                <Button variant="ghost" onClick={() => setTab("tasks")} className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  View {tasks.length} saved task{tasks.length > 1 ? "s" : ""} →
+                </Button>
+              </div>
+            )}
+          </div>
         ) : (
-          <Tabs defaultValue="day" className="mt-2">
-            <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur border border-border/60">
-              <TabsTrigger value="day">By Day</TabsTrigger>
-              <TabsTrigger value="category">By Category</TabsTrigger>
-            </TabsList>
+          <div className="mt-2 space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tasks…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 bg-card/50 backdrop-blur border-border/60"
+              />
+            </div>
 
-            <TabsContent value="day" className="mt-6">
-              <div className="space-y-8">
-                {groupedByDay.map((group) => (
-                  <section key={group.label}>
-                    <div className="flex items-center gap-2 mb-3 px-1">
-                      <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary))]" />
-                      <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        {group.label}
-                      </h2>
-                      <span className="text-xs text-muted-foreground/60">{group.tasks.length}</span>
-                    </div>
-                    <div className="space-y-2">
-                      {group.tasks.map((t) => (
-                        <TaskCard key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </TabsContent>
+            {/* Filters */}
+            <div className="grid grid-cols-2 gap-2">
+              <Select value={catFilter} onValueChange={(v) => setCatFilter(v as any)}>
+                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  <SelectItem value="TECH">Tech</SelectItem>
+                  <SelectItem value="SCHOOL">School</SelectItem>
+                  <SelectItem value="PERSONAL">Personal</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={prioFilter} onValueChange={(v) => setPrioFilter(v as any)}>
+                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All priorities</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="med">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={dueFilter} onValueChange={(v) => setDueFilter(v as any)}>
+                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Due" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This week</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <TabsContent value="category" className="mt-6">
-              <div className="space-y-8">
-                {CATEGORIES.map((cat) => {
-                  const items = grouped[cat];
-                  if (items.length === 0) return null;
-                  return (
-                    <section key={cat}>
-                      <div className="flex items-center gap-2 mb-3 px-1">
-                        <span className={`h-2 w-2 rounded-full ${CATEGORY_DOT[cat]}`} />
-                        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                          {CATEGORY_LABEL[cat]}
-                        </h2>
-                        <span className="text-xs text-muted-foreground/60">{items.length}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {items.map((t) => (
-                          <TaskCard key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />
-                        ))}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            </TabsContent>
-          </Tabs>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+                <X className="h-3 w-3" /> Clear filters
+              </button>
+            )}
+
+            {/* Task list */}
+            {filtered.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-12">
+                {tasks.length === 0 ? "No tasks yet. Hit the mic to start." : "No tasks match your filters."}
+              </p>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {filtered.map((t) => (
+                      <TaskCard
+                        key={t.id}
+                        task={t}
+                        onToggle={toggleTask}
+                        onDelete={deleteTask}
+                        onEdit={openEdit}
+                        draggable
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+          </div>
         )}
       </main>
 
+      <EditTaskDialog task={editingTask} open={editOpen} onOpenChange={setEditOpen} onSave={saveEdit} />
+
       {/* Floating record dock */}
-      <div className="fixed bottom-0 inset-x-0 z-30 pointer-events-none">
-        <div className="max-w-2xl mx-auto px-5 pb-8 pt-16 bg-gradient-to-t from-background via-background/90 to-transparent">
-          <div className="flex flex-col items-center gap-3 pointer-events-auto">
+      <div className="fixed bottom-16 inset-x-0 z-30 pointer-events-none">
+        <div className="max-w-2xl mx-auto px-5 pb-4 pt-16 bg-gradient-to-t from-background via-background/90 to-transparent">
+          <div className="flex flex-col items-center gap-2 pointer-events-auto">
             {transcript && (
               <div className="max-w-md text-center text-xs text-muted-foreground bg-card/70 backdrop-blur border border-border/60 rounded-full px-4 py-1.5 animate-float-up">
                 "{transcript}"
               </div>
             )}
             <RecordButton state={recorder.state} onPress={handlePress} onRelease={handleRelease} />
-            <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
               {recorder.state === "recording" ? "Listening…" : recorder.state === "processing" ? "Thinking…" : "Hold to record"}
             </p>
           </div>
         </div>
       </div>
+
+      {/* Bottom nav */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-background/90 backdrop-blur">
+        <div className="max-w-2xl mx-auto grid grid-cols-2">
+          {([
+            { id: "home", label: "Home", Icon: Home },
+            { id: "tasks", label: "Tasks", Icon: ListChecks },
+          ] as const).map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-0.5 py-2.5 transition",
+                tab === id ? "text-primary" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-[10px] uppercase tracking-[0.2em]">{label}</span>
+              {id === "tasks" && tasks.length > 0 && (
+                <span className="absolute mt-0 ml-8 text-[9px] bg-primary text-primary-foreground rounded-full px-1.5 py-px">
+                  {tasks.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 };
