@@ -74,7 +74,7 @@ export const TaskCard = ({ task, onToggle, onDelete, onEdit, draggable = false }
             {task.title}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border", categoryStyles[task.category])}>
+            <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border", categoryStyles[task.category] ?? defaultCategoryStyle)}>
               {task.category}
             </span>
             <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border", priorityStyles[task.priority])}>
