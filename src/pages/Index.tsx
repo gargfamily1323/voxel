@@ -32,7 +32,7 @@ const Index = () => {
 
   // filters
   const [search, setSearch] = useState("");
-  const [catFilter, setCatFilter] = useState<Category | "all">("all");
+  const [catFilter, setCatFilter] = useState<string>("all");
   const [prioFilter, setPrioFilter] = useState<Priority | "all">("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [dueFilter, setDueFilter] = useState<DueFilter>("all");
