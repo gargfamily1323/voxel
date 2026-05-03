@@ -5,7 +5,9 @@ import { RecordButton } from "@/components/RecordButton";
 import { TaskCard } from "@/components/TaskCard";
 import { EmptyState } from "@/components/EmptyState";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
+import { HeaderMenu } from "@/components/HeaderMenu";
 import { useRecorder } from "@/hooks/useRecorder";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Waves, Home, ListChecks, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -25,6 +27,7 @@ type DueFilter = "all" | "today" | "week" | "overdue";
 type Tab = "home" | "tasks";
 
 const Index = () => {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [transcript, setTranscript] = useState<string | null>(null);
@@ -107,8 +110,9 @@ const Index = () => {
       if (exErr || ex?.error) throw new Error(ex?.error || exErr?.message);
       const newTasks = (ex?.tasks ?? []) as Array<{ title: string; category: Category; priority: Priority; due_date: string | null }>;
       if (newTasks.length === 0) { toast.dismiss("process"); toast("No tasks detected."); recorder.reset(); return; }
+      if (!user) throw new Error("Not signed in");
       const baseOrder = Date.now();
-      const withOrder = newTasks.map((t, i) => ({ ...t, sort_order: baseOrder + i }));
+      const withOrder = newTasks.map((t, i) => ({ ...t, sort_order: baseOrder + i, user_id: user.id }));
       const { error: insErr } = await supabase.from("tasks").insert(withOrder);
       if (insErr) throw insErr;
       toast.success(`Added ${newTasks.length} task${newTasks.length > 1 ? "s" : ""}`, { id: "process" });
@@ -167,16 +171,19 @@ const Index = () => {
       <div className="absolute inset-0 bg-grid opacity-[0.04] pointer-events-none" />
 
       <header className="relative px-5 pt-8 pb-4 max-w-2xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-xl bg-gradient-primary flex items-center justify-center glow-primary">
-            <Waves className="h-5 w-5 text-primary-foreground" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-xl bg-gradient-primary flex items-center justify-center glow-primary">
+              <Waves className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-display font-bold tracking-tight">
+                <span className="text-gradient">Voxel</span>
+              </h1>
+              <p className="text-xs text-muted-foreground -mt-0.5">Voice → Tasks, instantly</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-display font-bold tracking-tight">
-              <span className="text-gradient">Voxel</span>
-            </h1>
-            <p className="text-xs text-muted-foreground -mt-0.5">Voice → Tasks, instantly</p>
-          </div>
+          <HeaderMenu />
         </div>
       </header>
 
