@@ -171,16 +171,19 @@ const Index = () => {
       <div className="absolute inset-0 bg-grid opacity-[0.04] pointer-events-none" />
 
       <header className="relative px-5 pt-8 pb-4 max-w-2xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-xl bg-gradient-primary flex items-center justify-center glow-primary">
-            <Waves className="h-5 w-5 text-primary-foreground" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-xl bg-gradient-primary flex items-center justify-center glow-primary">
+              <Waves className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-display font-bold tracking-tight">
+                <span className="text-gradient">Voxel</span>
+              </h1>
+              <p className="text-xs text-muted-foreground -mt-0.5">Voice → Tasks, instantly</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-display font-bold tracking-tight">
-              <span className="text-gradient">Voxel</span>
-            </h1>
-            <p className="text-xs text-muted-foreground -mt-0.5">Voice → Tasks, instantly</p>
-          </div>
+          <HeaderMenu />
         </div>
       </header>
 
