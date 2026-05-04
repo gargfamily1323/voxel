@@ -8,6 +8,7 @@ import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { HeaderMenu } from "@/components/HeaderMenu";
 import { useRecorder } from "@/hooks/useRecorder";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage, LANGUAGE_NAMES } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { Waves, Home, ListChecks, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ type Tab = "home" | "tasks";
 
 const Index = () => {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [transcript, setTranscript] = useState<string | null>(null);
@@ -106,15 +108,23 @@ const Index = () => {
     try {
       setTranscript(text);
       toast.loading("Extracting tasks…", { id: "process" });
-      const { data: ex, error: exErr } = await supabase.functions.invoke("extract-tasks", { body: { transcript: text } });
+      const { data: ex, error: exErr } = await supabase.functions.invoke("extract-tasks", { body: { transcript: text, language: LANGUAGE_NAMES[language] } });
       if (exErr || ex?.error) throw new Error(ex?.error || exErr?.message);
       const newTasks = (ex?.tasks ?? []) as Array<{ title: string; category: Category; priority: Priority; due_date: string | null }>;
       if (newTasks.length === 0) { toast.dismiss("process"); toast("No tasks detected."); recorder.reset(); return; }
       if (!user) throw new Error("Not signed in");
       const baseOrder = Date.now();
       const withOrder = newTasks.map((t, i) => ({ ...t, sort_order: baseOrder + i, user_id: user.id }));
-      const { error: insErr } = await supabase.from("tasks").insert(withOrder);
+      const { data: inserted, error: insErr } = await supabase.from("tasks").insert(withOrder).select();
       if (insErr) throw insErr;
+      // Optimistically add to local state so they show immediately without refresh
+      if (inserted && inserted.length) {
+        setTasks((prev) => {
+          const existing = new Set(prev.map((t) => t.id));
+          const fresh = inserted.filter((t: Task) => !existing.has(t.id));
+          return [...prev, ...fresh].sort((a, b) => a.sort_order - b.sort_order);
+        });
+      }
       toast.success(`Added ${newTasks.length} task${newTasks.length > 1 ? "s" : ""}`, { id: "process" });
     } catch (e: any) {
       console.error(e);
