@@ -330,9 +330,9 @@ const Index = () => {
             >
               <Icon className="h-5 w-5" />
               <span className="text-[10px] uppercase tracking-[0.2em]">{label}</span>
-              {id === "tasks" && tasks.length > 0 && (
+              {id === "tasks" && tasks.filter((t) => !t.completed).length > 0 && (
                 <span className="absolute mt-0 ml-8 text-[9px] bg-primary text-primary-foreground rounded-full px-1.5 py-px">
-                  {tasks.length}
+                  {tasks.filter((t) => !t.completed).length}
                 </span>
               )}
             </button>
