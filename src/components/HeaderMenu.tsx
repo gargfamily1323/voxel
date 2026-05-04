@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, LogOut, UserPlus, Trash2, Palette, User as UserIcon, Check } from "lucide-react";
+import { Menu, LogOut, UserPlus, Trash2, Palette, User as UserIcon, Check, Languages } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
@@ -11,11 +11,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, Theme } from "@/contexts/ThemeContext";
+import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type View = "main" | "account" | "theme";
+type View = "main" | "account" | "theme" | "language";
 
 const themeOptions: { id: Theme; label: string; description: string }[] = [
   { id: "default", label: "Default (Neon)", description: "The original electric blue + purple" },
@@ -27,6 +28,7 @@ export const HeaderMenu = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("main");
 
@@ -67,6 +69,7 @@ export const HeaderMenu = () => {
             {view === "main" && "Menu"}
             {view === "account" && (<button onClick={() => setView("main")} className="text-left">← Account</button>)}
             {view === "theme" && (<button onClick={() => setView("main")} className="text-left">← Theme</button>)}
+            {view === "language" && (<button onClick={() => setView("main")} className="text-left">← Language</button>)}
           </SheetTitle>
         </SheetHeader>
 
@@ -80,6 +83,11 @@ export const HeaderMenu = () => {
             <button onClick={() => setView("theme")} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition">
               <Palette className="h-4 w-4" />
               <span className="text-sm">Theme</span>
+            </button>
+            <button onClick={() => setView("language")} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition">
+              <Languages className="h-4 w-4" />
+              <span className="text-sm flex-1 text-left">Language</span>
+              <span className="text-xs text-muted-foreground">{LANGUAGES.find(l => l.id === language)?.native}</span>
             </button>
           </div>
         )}
