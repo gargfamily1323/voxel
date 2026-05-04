@@ -201,13 +201,16 @@ const Index = () => {
         {tab === "home" ? (
           <div className="pt-8">
             <EmptyState />
-            {tasks.length > 0 && (
-              <div className="mt-6 text-center">
-                <Button variant="ghost" onClick={() => setTab("tasks")} className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  View {tasks.length} saved task{tasks.length > 1 ? "s" : ""} →
-                </Button>
-              </div>
-            )}
+            {(() => {
+              const active = tasks.filter((t) => !t.completed).length;
+              return active > 0 ? (
+                <div className="mt-6 text-center">
+                  <Button variant="ghost" onClick={() => setTab("tasks")} className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    View {active} active task{active > 1 ? "s" : ""} →
+                  </Button>
+                </div>
+              ) : null;
+            })()}
           </div>
         ) : (
           <div className="mt-2 space-y-4">
