@@ -78,6 +78,20 @@ const Auth = () => {
           <p className="text-xs text-muted-foreground mt-1">Voice → Tasks, instantly</p>
         </div>
 
+        <div className="mb-5">
+          <Label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5">
+            <Languages className="h-3.5 w-3.5" /> Language
+          </Label>
+          <Select value={language} onValueChange={(v) => setLanguage(v as any)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((l) => (
+                <SelectItem key={l.id} value={l.id}>{l.label} — {l.native}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
