@@ -147,6 +147,27 @@ export const HeaderMenu = () => {
             ))}
           </div>
         )}
+
+        {view === "language" && (
+          <div className="mt-6 space-y-2">
+            {LANGUAGES.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setLanguage(opt.id)}
+                className={cn(
+                  "w-full flex items-center justify-between gap-3 px-3 py-3 rounded-lg transition text-left",
+                  language === opt.id ? "bg-primary/10 border border-primary/40" : "hover:bg-muted",
+                )}
+              >
+                <div>
+                  <p className="text-sm font-medium">{opt.label}</p>
+                  <p className="text-xs text-muted-foreground">{opt.native}</p>
+                </div>
+                {language === opt.id && <Check className="h-4 w-4 text-primary" />}
+              </button>
+            ))}
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
