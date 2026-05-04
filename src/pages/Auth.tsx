@@ -3,17 +3,20 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Waves } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Waves, Languages } from "lucide-react";
 import { toast } from "sonner";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { user, loading } = useAuth();
+  const { language, setLanguage } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -73,6 +76,20 @@ const Auth = () => {
           </div>
           <h1 className="text-3xl font-display font-bold"><span className="text-gradient">Voxel</span></h1>
           <p className="text-xs text-muted-foreground mt-1">Voice → Tasks, instantly</p>
+        </div>
+
+        <div className="mb-5">
+          <Label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5">
+            <Languages className="h-3.5 w-3.5" /> Language
+          </Label>
+          <Select value={language} onValueChange={(v) => setLanguage(v as any)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((l) => (
+                <SelectItem key={l.id} value={l.id}>{l.label} — {l.native}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Tabs defaultValue="signin" className="w-full">

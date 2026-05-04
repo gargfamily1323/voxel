@@ -9,21 +9,23 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { transcript } = await req.json();
+    const { transcript, language } = await req.json();
     if (!transcript) throw new Error("No transcript provided");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const today = new Date().toISOString().slice(0, 10);
-    const systemPrompt = `Today's Date is ${today} (Friday, May 1, 2026).
+    const outputLanguage = language || "English";
+    const systemPrompt = `Today's Date is ${today}.
 
-You extract actionable tasks from a user's voice brain dump.
+You extract actionable tasks from a user's voice brain dump. The user may speak in any language.
 
 Rules:
 - Categorize each task into exactly one of: TECH, SCHOOL, PERSONAL
 - Assign Priority: high, med, or low based on tone and deadlines mentioned
-- Format every task title with an action verb (Install, Draft, Buy, Email, Read, etc.)
+- Format every task title with an action verb
+- Write every task title in ${outputLanguage}. Translate if the input is in another language.
 - If a relative date is mentioned ("tomorrow", "next Monday", "in 3 days"), calculate the actual calendar date as YYYY-MM-DD
 - If no date mentioned, due_date should be null
 - Output ONLY via the extract_tasks tool call`;
