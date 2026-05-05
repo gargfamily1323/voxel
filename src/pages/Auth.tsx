@@ -16,7 +16,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { user, loading } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -75,12 +75,12 @@ const Auth = () => {
             <Waves className="h-6 w-6 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-display font-bold"><span className="text-gradient">Voxel</span></h1>
-          <p className="text-xs text-muted-foreground mt-1">Voice → Tasks, instantly</p>
+          <p className="text-xs text-muted-foreground mt-1">{t.tagline}</p>
         </div>
 
         <div className="mb-5">
           <Label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5">
-            <Languages className="h-3.5 w-3.5" /> Language
+            <Languages className="h-3.5 w-3.5" /> {t.language}
           </Label>
           <Select value={language} onValueChange={(v) => setLanguage(v as any)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -94,51 +94,51 @@ const Auth = () => {
 
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger value="signin">{t.signIn}</TabsTrigger>
+            <TabsTrigger value="signup">{t.signUp}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin">
             <form onSubmit={handleSignIn} className="space-y-3 mt-4">
               <div>
-                <Label htmlFor="si-email">Email</Label>
+                <Label htmlFor="si-email">{t.email}</Label>
                 <Input id="si-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="si-pw">Password</Label>
+                <Label htmlFor="si-pw">{t.password}</Label>
                 <Input id="si-pw" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
-              <Button type="submit" className="w-full" disabled={busy}>Sign In</Button>
+              <Button type="submit" className="w-full" disabled={busy}>{t.signIn}</Button>
             </form>
           </TabsContent>
 
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-3 mt-4">
               <div>
-                <Label htmlFor="su-name">Name</Label>
-                <Input id="su-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                <Label htmlFor="su-name">{t.name}</Label>
+                <Input id="su-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} />
               </div>
               <div>
-                <Label htmlFor="su-email">Email</Label>
+                <Label htmlFor="su-email">{t.email}</Label>
                 <Input id="su-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="su-pw">Password</Label>
+                <Label htmlFor="su-pw">{t.password}</Label>
                 <Input id="su-pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
-              <Button type="submit" className="w-full" disabled={busy}>Create account</Button>
+              <Button type="submit" className="w-full" disabled={busy}>{t.createAccount}</Button>
             </form>
           </TabsContent>
         </Tabs>
 
         <div className="my-5 flex items-center gap-3">
           <div className="flex-1 h-px bg-border" />
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">or</span>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{t.or}</span>
           <div className="flex-1 h-px bg-border" />
         </div>
 
         <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={busy}>
-          Continue with Google
+          {t.continueWithGoogle}
         </Button>
       </div>
     </div>
