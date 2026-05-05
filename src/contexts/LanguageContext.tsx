@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export type Language = "en" | "hi" | "zh" | "es" | "fr";
+export type Language = "en" | "hi" | "hinglish" | "zh" | "es" | "fr";
 
 export const LANGUAGES: { id: Language; label: string; native: string }[] = [
   { id: "en", label: "English", native: "English" },
   { id: "hi", label: "Hindi", native: "हिन्दी" },
+  { id: "hinglish", label: "Hinglish", native: "Hinglish" },
   { id: "zh", label: "Chinese", native: "中文" },
   { id: "es", label: "Spanish", native: "Español" },
   { id: "fr", label: "French", native: "Français" },
@@ -13,6 +14,7 @@ export const LANGUAGES: { id: Language; label: string; native: string }[] = [
 export const LANGUAGE_NAMES: Record<Language, string> = {
   en: "English",
   hi: "Hindi",
+  hinglish: "Hinglish (Hindi written in Roman/English script, mixing Hindi and English words naturally as spoken in India)",
   zh: "Chinese (Simplified)",
   es: "Spanish",
   fr: "French",
