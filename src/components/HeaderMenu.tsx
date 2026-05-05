@@ -18,17 +18,18 @@ import { cn } from "@/lib/utils";
 
 type View = "main" | "account" | "theme" | "language";
 
-const themeOptions: { id: Theme; label: string; description: string }[] = [
-  { id: "default", label: "Default (Neon)", description: "The original electric blue + purple" },
-  { id: "classic", label: "Classic", description: "Toned-down dark slate" },
-  { id: "light", label: "Light", description: "Bright mode" },
-];
+const themeIds: Theme[] = ["default", "classic", "light"];
 
 export const HeaderMenu = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+  const themeOptions = [
+    { id: "default" as Theme, label: t.themeDefault, description: t.themeDefaultDesc },
+    { id: "classic" as Theme, label: t.themeClassic, description: t.themeClassicDesc },
+    { id: "light" as Theme, label: t.themeLight, description: t.themeLightDesc },
+  ];
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("main");
 
