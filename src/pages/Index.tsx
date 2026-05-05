@@ -29,7 +29,7 @@ type Tab = "home" | "tasks";
 
 const Index = () => {
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t: tr } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [transcript, setTranscript] = useState<string | null>(null);
@@ -104,14 +104,14 @@ const Index = () => {
   const handleRelease = async () => {
     if (recorder.state !== "recording") return;
     const text = await recorder.stop();
-    if (!text) { toast("Didn't catch that — try again."); recorder.reset(); return; }
+    if (!text) { toast(tr.didntCatch); recorder.reset(); return; }
     try {
       setTranscript(text);
-      toast.loading("Extracting tasks…", { id: "process" });
+      toast.loading(tr.extractingTasks, { id: "process" });
       const { data: ex, error: exErr } = await supabase.functions.invoke("extract-tasks", { body: { transcript: text, language: LANGUAGE_NAMES[language] } });
       if (exErr || ex?.error) throw new Error(ex?.error || exErr?.message);
       const newTasks = (ex?.tasks ?? []) as Array<{ title: string; category: Category; priority: Priority; due_date: string | null }>;
-      if (newTasks.length === 0) { toast.dismiss("process"); toast("No tasks detected."); recorder.reset(); return; }
+      if (newTasks.length === 0) { toast.dismiss("process"); toast(tr.noTasksDetected); recorder.reset(); return; }
       if (!user) throw new Error("Not signed in");
       const baseOrder = Date.now();
       const withOrder = newTasks.map((t, i) => ({ ...t, sort_order: baseOrder + i, user_id: user.id }));
@@ -125,7 +125,7 @@ const Index = () => {
           return [...prev, ...fresh].sort((a, b) => a.sort_order - b.sort_order);
         });
       }
-      toast.success(`Added ${newTasks.length} task${newTasks.length > 1 ? "s" : ""}`, { id: "process" });
+      toast.success(tr.addedTasks(newTasks.length), { id: "process" });
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message ?? "Something went wrong", { id: "process" });
@@ -190,7 +190,7 @@ const Index = () => {
               <h1 className="text-2xl font-display font-bold tracking-tight">
                 <span className="text-gradient">Voxel</span>
               </h1>
-              <p className="text-xs text-muted-foreground -mt-0.5">Voice → Tasks, instantly</p>
+              <p className="text-xs text-muted-foreground -mt-0.5">{tr.tagline}</p>
             </div>
           </div>
           <HeaderMenu />
@@ -206,7 +206,7 @@ const Index = () => {
               return active > 0 ? (
                 <div className="mt-6 text-center">
                   <Button variant="ghost" onClick={() => setTab("tasks")} className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    View {active} active task{active > 1 ? "s" : ""} →
+                    {tr.viewActive(active)}
                   </Button>
                 </div>
               ) : null;
@@ -218,7 +218,7 @@ const Index = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search tasks…"
+                placeholder={tr.searchTasks}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 bg-card/50 backdrop-blur border-border/60"
@@ -228,52 +228,52 @@ const Index = () => {
             {/* Filters */}
             <div className="grid grid-cols-2 gap-2">
               <Select value={catFilter} onValueChange={(v) => setCatFilter(v as any)}>
-                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder={tr.category} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
+                  <SelectItem value="all">{tr.allCategories}</SelectItem>
                   {categoriesPresent.map((c) => (
                     <SelectItem key={c} value={c}>{c.charAt(0) + c.slice(1).toLowerCase()}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={prioFilter} onValueChange={(v) => setPrioFilter(v as any)}>
-                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Priority" /></SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder={tr.priority} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All priorities</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="med">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="all">{tr.allPriorities}</SelectItem>
+                  <SelectItem value="high">{tr.high}</SelectItem>
+                  <SelectItem value="med">{tr.medium}</SelectItem>
+                  <SelectItem value="low">{tr.low}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder={tr.status} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="all">{tr.allStatus}</SelectItem>
+                  <SelectItem value="active">{tr.active}</SelectItem>
+                  <SelectItem value="completed">{tr.completed}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={dueFilter} onValueChange={(v) => setDueFilter(v as any)}>
-                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder="Due" /></SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-border/60 text-xs h-9"><SelectValue placeholder={tr.due} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Any time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This week</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
+                  <SelectItem value="all">{tr.anyTime}</SelectItem>
+                  <SelectItem value="today">{tr.today}</SelectItem>
+                  <SelectItem value="week">{tr.thisWeek}</SelectItem>
+                  <SelectItem value="overdue">{tr.overdue}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {hasActiveFilters && (
               <button onClick={clearFilters} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
-                <X className="h-3 w-3" /> Clear filters
+                <X className="h-3 w-3" /> {tr.clearFilters}
               </button>
             )}
 
             {/* Task list */}
             {filtered.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-12">
-                {tasks.length === 0 ? "No tasks yet. Hit the mic to start." : "No tasks match your filters."}
+                {tasks.length === 0 ? tr.noTasksYet : tr.noMatch}
               </p>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -310,7 +310,7 @@ const Index = () => {
             )}
             <RecordButton state={recorder.state} onPress={handlePress} onRelease={handleRelease} />
             <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-              {recorder.state === "recording" ? "Listening…" : recorder.state === "processing" ? "Thinking…" : "Hold to record"}
+              {recorder.state === "recording" ? tr.listening : recorder.state === "processing" ? tr.thinking : tr.holdToRecord}
             </p>
           </div>
         </div>
@@ -320,8 +320,8 @@ const Index = () => {
       <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-background/90 backdrop-blur">
         <div className="max-w-2xl mx-auto grid grid-cols-2">
           {([
-            { id: "home", label: "Home", Icon: Home },
-            { id: "tasks", label: "Tasks", Icon: ListChecks },
+            { id: "home", label: tr.home, Icon: Home },
+            { id: "tasks", label: tr.tasks, Icon: ListChecks },
           ] as const).map(({ id, label, Icon }) => (
             <button
               key={id}

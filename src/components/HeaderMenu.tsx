@@ -18,17 +18,18 @@ import { cn } from "@/lib/utils";
 
 type View = "main" | "account" | "theme" | "language";
 
-const themeOptions: { id: Theme; label: string; description: string }[] = [
-  { id: "default", label: "Default (Neon)", description: "The original electric blue + purple" },
-  { id: "classic", label: "Classic", description: "Toned-down dark slate" },
-  { id: "light", label: "Light", description: "Bright mode" },
-];
+const themeIds: Theme[] = ["default", "classic", "light"];
 
 export const HeaderMenu = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+  const themeOptions = [
+    { id: "default" as Theme, label: t.themeDefault, description: t.themeDefaultDesc },
+    { id: "classic" as Theme, label: t.themeClassic, description: t.themeClassicDesc },
+    { id: "light" as Theme, label: t.themeLight, description: t.themeLightDesc },
+  ];
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("main");
 
@@ -66,10 +67,10 @@ export const HeaderMenu = () => {
       <SheetContent side="right" className="w-[300px] sm:w-[340px]">
         <SheetHeader>
           <SheetTitle>
-            {view === "main" && "Menu"}
-            {view === "account" && (<button onClick={() => setView("main")} className="text-left">← Account</button>)}
-            {view === "theme" && (<button onClick={() => setView("main")} className="text-left">← Theme</button>)}
-            {view === "language" && (<button onClick={() => setView("main")} className="text-left">← Language</button>)}
+            {view === "main" && t.menu}
+            {view === "account" && (<button onClick={() => setView("main")} className="text-left">← {t.account}</button>)}
+            {view === "theme" && (<button onClick={() => setView("main")} className="text-left">← {t.theme}</button>)}
+            {view === "language" && (<button onClick={() => setView("main")} className="text-left">← {t.language}</button>)}
           </SheetTitle>
         </SheetHeader>
 
@@ -78,15 +79,15 @@ export const HeaderMenu = () => {
             <p className="px-2 pb-3 text-xs text-muted-foreground truncate">{user?.email}</p>
             <button onClick={() => setView("account")} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition">
               <UserIcon className="h-4 w-4" />
-              <span className="text-sm">Account settings</span>
+              <span className="text-sm">{t.accountSettings}</span>
             </button>
             <button onClick={() => setView("theme")} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition">
               <Palette className="h-4 w-4" />
-              <span className="text-sm">Theme</span>
+              <span className="text-sm">{t.theme}</span>
             </button>
             <button onClick={() => setView("language")} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition">
               <Languages className="h-4 w-4" />
-              <span className="text-sm flex-1 text-left">Language</span>
+              <span className="text-sm flex-1 text-left">{t.language}</span>
               <span className="text-xs text-muted-foreground">{LANGUAGES.find(l => l.id === language)?.native}</span>
             </button>
           </div>
@@ -96,30 +97,28 @@ export const HeaderMenu = () => {
           <div className="mt-6 space-y-2">
             <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition">
               <LogOut className="h-4 w-4" />
-              <span className="text-sm">Log out</span>
+              <span className="text-sm">{t.logout}</span>
             </button>
             <button onClick={handleAddAccount} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition">
               <UserPlus className="h-4 w-4" />
-              <span className="text-sm">Add new account</span>
+              <span className="text-sm">{t.addAccount}</span>
             </button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-destructive/10 text-destructive transition">
                   <Trash2 className="h-4 w-4" />
-                  <span className="text-sm">Delete account</span>
+                  <span className="text-sm">{t.deleteAccount}</span>
                 </button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all your tasks and profile data. This cannot be undone.
-                  </AlertDialogDescription>
+                  <AlertDialogTitle>{t.deleteConfirmTitle}</AlertDialogTitle>
+                  <AlertDialogDescription>{t.deleteConfirmDesc}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Delete
+                    {t.delete}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
