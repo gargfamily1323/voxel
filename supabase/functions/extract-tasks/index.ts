@@ -25,7 +25,11 @@ Rules:
 - Categorize each task into exactly one of: TECH, SCHOOL, PERSONAL
 - Assign Priority: high, med, or low based on tone and deadlines mentioned
 - Format every task title with an action verb
-- Write every task title in ${outputLanguage}. Translate if the input is in another language.
+- Language rule for task titles:
+  - The user's selected app language is: ${outputLanguage}.
+  - If the spoken/input language MATCHES the selected language, write task titles in ${outputLanguage}.
+  - If the user speaks in Hindi but the selected language is English, write task titles in Hinglish (Hindi words written in Roman/English script, mixing Hindi and English naturally as spoken in India). Do NOT translate fully to English.
+  - Otherwise, if the spoken language differs from the selected language, write task titles in ${outputLanguage}.
 - If a relative date is mentioned ("tomorrow", "next Monday", "in 3 days"), calculate the actual calendar date as YYYY-MM-DD
 - If no date mentioned, due_date should be null
 - Output ONLY via the extract_tasks tool call`;
