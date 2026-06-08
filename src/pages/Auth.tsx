@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  updateProfile,
+} from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -30,41 +35,43 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Welcome back");
-    navigate("/", { replace: true });
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Welcome back");
+      navigate("/", { replace: true });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Sign-in failed");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { display_name: name || email.split("@")[0] },
-      },
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Check your email to confirm your account");
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const displayName = name || email.split("@")[0];
+      if (cred.user) await updateProfile(cred.user, { displayName });
+      toast.success("Account created");
+      navigate("/", { replace: true });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Sign-up failed");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleGoogle = async () => {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      navigate("/", { replace: true });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Google sign-in failed");
+    } finally {
       setBusy(false);
-      toast.error("Google sign-in failed");
-      return;
     }
-    if (result.redirected) return;
-    navigate("/", { replace: true });
   };
 
   return (
