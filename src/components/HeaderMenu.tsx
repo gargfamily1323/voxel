@@ -47,12 +47,13 @@ export const HeaderMenu = () => {
 
   const handleDelete = async () => {
     if (!user) return;
-    // Delete user's data; auth user deletion requires admin endpoint – sign out after wiping data
-    const { error } = await supabase.from("tasks").delete().eq("user_id", user.id);
-    if (error) return toast.error(error.message);
-    await supabase.from("profiles").delete().eq("user_id", user.id);
-    toast.success("Account data deleted");
-    await signOut();
+    try {
+      await user.raw.delete();
+      toast.success("Account deleted");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Please sign in again to delete your account");
+      await signOut();
+    }
     setOpen(false);
     navigate("/auth", { replace: true });
   };
