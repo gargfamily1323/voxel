@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, Theme } from "@/contexts/ThemeContext";
 import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
