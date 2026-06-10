@@ -3,10 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
   updateProfile,
 } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth, signInWithGoogle } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
