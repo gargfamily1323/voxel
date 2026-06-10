@@ -1,7 +1,11 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, GithubAuthProvider, signInWithCredential, signInWithPopup } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+} from "firebase/auth";
 import { Capacitor } from "@capacitor/core";
-import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAoIsFnbyKl08sUmxKTOaUh-r1QuXuc2Iw",
@@ -19,17 +23,12 @@ export const googleProvider = new GoogleAuthProvider();
 /**
  * Cross-platform Google sign-in.
  * - Web: Firebase popup flow.
- * - Native (Android/iOS via Capacitor): native Google Sign-In, then bridge
- *   the resulting ID token into the Firebase Web SDK so `onAuthStateChanged`
- *   fires consistently across the app.
+ * - Native (Android/iOS via Capacitor): Firebase redirect flow.
  */
 export async function signInWithGoogle() {
   if (Capacitor.isNativePlatform()) {
-    const result = await FirebaseAuthentication.signInWithGoogle();
-    const idToken = result.credential?.idToken;
-    if (!idToken) throw new Error("Google sign-in did not return an ID token");
-    const credential = GoogleAuthProvider.credential(idToken);
-    return signInWithCredential(auth, credential);
+    return signInWithRedirect(auth, googleProvider);
   }
   return signInWithPopup(auth, googleProvider);
 }
+
