@@ -35,11 +35,24 @@ const Auth = () => {
     e.preventDefault();
     setBusy(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cleanEmail = email.trim().toLowerCase();
+      await signInWithEmailAndPassword(auth, cleanEmail, password);
       toast.success("Welcome back");
       navigate("/", { replace: true });
     } catch (err: any) {
-      toast.error(err?.message ?? "Sign-in failed");
+      console.error("[auth] sign-in error", err?.code, err?.message, err);
+      const code: string = err?.code ?? "";
+      const msg =
+        code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found"
+          ? "Invalid email or password"
+          : code === "auth/too-many-requests"
+          ? "Too many attempts. Try again later or reset your password."
+          : code === "auth/invalid-email"
+          ? "Invalid email address"
+          : code === "auth/network-request-failed"
+          ? "Network error. Check your connection."
+          : err?.message ?? "Sign-in failed";
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
